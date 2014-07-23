@@ -15,7 +15,7 @@ class Mping(object):
     根据需要过滤在指定检查周期内已经告警过的机器
     '''
     
-    def __init__(self, hostlistfile, ignorelistfile, resultfile='Mping_resulst.list', repeatalarm=False,  timeout=1000, count=2, lastcount=10):
+    def __init__(self, hostlistfile, ignorelistfile, resultfile='Mping_resulst.list', repeatalarm=False,  timeout=1000, count=10, lastcount=10):
         self.hosts = []
         self.ignores = []
         self.job_queue = Queue.Queue()
@@ -152,13 +152,14 @@ class WorkerThread(threading.Thread):
         while True:
             ip = self.job_queue.get()
             p = Ping(destination=ip)
-            p.run(self.count)
+            for i in range(self.count):
+            #p.run(self.count)
+                # 发送一个icmp包
+                p.do()
 
-            #print "ip %s done: %s" % (ip, p.receive_count)
-            # ping count 个包全部丢了，继续发送last_count个包
-            if p.receive_count == 0:
-                p.run(self.count+self.last_count)
-
+                # 收到回包，ping ok
+                if p.receive_count == 1:
+                    break
 
             # count+last_count个包都丢了,当成ping不可达
             if p.receive_count == 0:
@@ -170,5 +171,5 @@ class WorkerThread(threading.Thread):
 if __name__ == '__main__':
     m = Mping('allhosts.list', 'ignorehosts.list', repeatalarm=True)
     print "total %s hosts" % len(m.hosts)
-    m.mping(10)
+    m.mping(100)
     
